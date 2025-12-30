@@ -1,0 +1,55 @@
+High‑impact features we can add to (prioritized)
+
+Core detection & scraping
+Content scripts that detect listings (hotel name, location, price) on popular sites.
+Heuristics + site-specific parsers (Booking, Airbnb, Expedia).
+
+
+Matching & search
+Fuzzy matching / normalized place + hotel name resolution.
+Backend search aggregator (optional) to query APIs/scrapers.
+
+
+Price comparison UI (extension popup + side panel)
+Side popup overlay showing competitor prices, badges for best price, quick links.
+In-popup charts (price history) using Chart.js.
+
+
+
+Real-time updates & notifications
+Background service worker to poll/watch prices and send Chrome notifications on drops.
+
+
+
+Data storage & sync
+LocalIndexedDB for fast caching; optional backend (Express + MongoDB/Firebase) for cross-device sync and history.
+
+
+Currency, localization & UX
+Auto currency conversion, time zone handling, multi-language support (i18n).
+
+
+Authentication & personalization
+Optional Firebase / Google OAuth for saved favorites, alerts, preferences.
+
+
+Privacy & security
+Minimal permissions in Manifest V3, explicit explanations, opt-in for data sharing.
+
+
+Performance & reliability
+Rate-limiting, exponential backoff for API/scrape requests; caching layer.
+
+
+ML / recommendations (advanced)
+"Best time to book" models (rule-based to start), personalized suggestions.
+
+
+Developer & QA
+Manifest V3, content scripts, service worker, popup, options pages, context menu.
+Automated tests: unit tests for parsers, E2E for extension flows, CI builds.
+
+
+Analytics & monetization (opt-in)
+Anonymous usage metrics, affiliate integration (optional).
+
