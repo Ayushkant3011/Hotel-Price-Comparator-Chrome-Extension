@@ -12,4 +12,8 @@ export default defineConfig({
     }),
     tailwindcss(),
   ],
+  build: {
+    outDir: '../extension/popup',
+    emptyOutDir: true,
+  },
 })
