@@ -1,3 +1,5 @@
+// this is price comparison extension server file
+
 const http = require('http'); 
 const app = require('./app'); 
 
