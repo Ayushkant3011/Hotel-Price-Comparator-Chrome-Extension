@@ -1,0 +1,6 @@
+got this error when i unpacked the extension to the chrome 
+
+A "Service worker registration failed. Status code: 15" error generally indicates a 
+script evaluation error in the service worker file itself, 
+most commonly in the context of a Chrome extension. 
+This means an error occurred while the browser was trying to run the script for the very first time. 
