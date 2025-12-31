@@ -1,10 +1,8 @@
-// this is price comparison extension server file
+// Minimal server bootstrap for development
+const app = require('./app')
 
-const http = require('http'); 
-const app = require('./app'); 
+const port = process.env.PORT || 3000
 
-
-
-server.listen(port,()=>{
-    console.log(`Server is up and running on port ${port}`);
-});
+app.listen(port, () => {
+    console.log(`Server is up and running on port ${port}`)
+})

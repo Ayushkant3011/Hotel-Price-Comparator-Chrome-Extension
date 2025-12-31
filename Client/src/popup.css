@@ -1,0 +1,5 @@
+.popup-root{font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;padding:12px;min-width:280px}
+.popup-root h2{font-size:16px;margin:0 0 8px}
+.status{color:#555;margin-bottom:8px}
+.detect{background:#f8fafb;padding:8px;border-radius:6px}
+.nodetect{color:#777}

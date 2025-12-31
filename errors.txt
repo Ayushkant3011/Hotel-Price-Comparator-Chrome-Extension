@@ -4,3 +4,9 @@ A "Service worker registration failed. Status code: 15" error generally indicate
 script evaluation error in the service worker file itself, 
 most commonly in the context of a Chrome extension. 
 This means an error occurred while the browser was trying to run the script for the very first time. 
+
+fix:
+Service worker registration failed (status code 15):
+Common causes: invalid/malformed manifest, wrong service_worker path (leading slash), or a runtime/syntax error inside the SW that prevents registration. In your case the manifest path and later runtime errors were the culprits.
+Runtime error "Cannot read properties of undefined (reading 'onAlarm')":
+Your SW called chrome.alarms.onAlarm while the alarms API was not available because the manifest lacked the "alarms" permission (and that makes chrome.alarms undefined).
