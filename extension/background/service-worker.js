@@ -14,6 +14,10 @@ try {
   // Use session storage if available (MV3), else fall back to local
   const store = chrome.storage.session || chrome.storage.local;
 
+  if (chrome.sidePanel) {
+    chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false }).catch(console.error);
+  }
+
   /* ──────────────────────────────────────────────
    * Installation
    * ────────────────────────────────────────────── */
