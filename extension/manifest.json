@@ -20,11 +20,11 @@
   "content_scripts": [
     {
       "matches": ["*://*.booking.com/*"],
-      "js": ["content_scripts/booking_detector.js"]
+      "js": ["parsers/booking.js", "content_scripts/booking_detector.js"]
     },
     {
       "matches": ["*://*.airbnb.com/*"],
-      "js": ["content_scripts/airbnb_detector.js"]
+      "js": ["parsers/airbnb.js", "content_scripts/airbnb_detector.js"]
     }
   ],
   "action": {

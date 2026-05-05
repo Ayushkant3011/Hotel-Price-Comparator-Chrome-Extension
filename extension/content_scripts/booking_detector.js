@@ -1,20 +1,35 @@
-// Basic Booking.com detector - heuristic selectors
+// Booking detector wrapper - uses shared parser (parsers/booking.js)
 (function () {
-  function findText(selectors) {
-    for (const sel of selectors) {
-      const el = document.querySelector(sel);
-      if (el && el.innerText && el.innerText.trim().length) return el.innerText.trim();
+  function sendIfFound(data) {
+    if (!data) return;
+    const has = data.title || data.price || data.location;
+    if (has) {
+      chrome.runtime.sendMessage({ type: 'DETECT_RESULT', payload: { site: 'booking.com', ...data } });
+      console.log('booking_detector sent', data);
     }
-    return null;
   }
 
-  const payload = {
-    site: 'booking.com',
-    title: findText(['h2.hp__hotel-name', 'h1#hp_hotel_name', 'h1'] ),
-    location: findText(['span.hp_address_subtitle', '.hp_address_subtitle', '.address']),
-    price: findText(['.bui-price-display__value', '.prco-valign-middle-helper', '.price'])
-  };
+  try {
+    if (typeof window.parseBooking === 'function') {
+      const initial = window.parseBooking();
+      sendIfFound(initial);
+    } else {
+      console.warn('parseBooking not available yet');
+    }
+  } catch (err) {
+    console.error('booking_detector error', err);
+  }
 
-  // send detection result to background
-  chrome.runtime.sendMessage({ type: 'DETECT_RESULT', payload });
+  // watch for dynamic changes
+  const observer = new MutationObserver(() => {
+    try {
+      if (typeof window.parseBooking === 'function') {
+        const r = window.parseBooking();
+        sendIfFound(r);
+      }
+    } catch (e) {
+      console.error('booking_detector observer error', e);
+    }
+  });
+  observer.observe(document.documentElement || document.body, { childList: true, subtree: true });
 })();

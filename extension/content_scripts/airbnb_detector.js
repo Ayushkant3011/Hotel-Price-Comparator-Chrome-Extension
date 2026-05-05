@@ -1,19 +1,34 @@
-// Basic Airbnb detector - heuristic selectors
+// Airbnb detector wrapper - uses shared parser (parsers/airbnb.js)
 (function () {
-  function findText(selectors) {
-    for (const sel of selectors) {
-      const el = document.querySelector(sel);
-      if (el && el.innerText && el.innerText.trim().length) return el.innerText.trim();
+  function sendIfFound(data) {
+    if (!data) return;
+    const has = data.title || data.price || data.location;
+    if (has) {
+      chrome.runtime.sendMessage({ type: 'DETECT_RESULT', payload: { site: 'airbnb.com', ...data } });
+      console.log('airbnb_detector sent', data);
     }
-    return null;
   }
 
-  const payload = {
-    site: 'airbnb.com',
-    title: findText(['h1._14i3z6h', 'h1._fecoyn4', 'h1']),
-    location: findText(['._1tanv1h', '.mapboxgl-ctrl-geocoder--input', '.location']),
-    price: findText(['span._tyxjp1', '.a8jt5op', '.price'])
-  };
+  try {
+    if (typeof window.parseAirbnb === 'function') {
+      const initial = window.parseAirbnb();
+      sendIfFound(initial);
+    } else {
+      console.warn('parseAirbnb not available yet');
+    }
+  } catch (err) {
+    console.error('airbnb_detector error', err);
+  }
 
-  chrome.runtime.sendMessage({ type: 'DETECT_RESULT', payload });
+  const observer = new MutationObserver(() => {
+    try {
+      if (typeof window.parseAirbnb === 'function') {
+        const r = window.parseAirbnb();
+        sendIfFound(r);
+      }
+    } catch (e) {
+      console.error('airbnb_detector observer error', e);
+    }
+  });
+  observer.observe(document.documentElement || document.body, { childList: true, subtree: true });
 })();
