@@ -1,27 +1,30 @@
-const express = require('express')
-const app = express()
+/**
+ * app.js — Express application setup
+ *
+ * Configures middleware and mounts route modules.
+ * Separated from server.js for testability.
+ */
 
-app.use(express.json())
+const express = require('express');
+const corsMiddleware = require('./middleware/cors');
+const errorHandler = require('./middleware/errorHandler');
+const compareRoutes = require('./routes/compare.routes');
 
-// Simple health endpoint
+const app = express();
+
+/* ── Middleware ── */
+app.use(corsMiddleware);
+app.use(express.json({ limit: '1mb' }));
+
+/* ── Health check ── */
 app.get('/', (req, res) => {
-  res.send({ ok: true, service: 'Hotel Price Comparator API' })
-})
+  res.json({ ok: true, service: 'Hotel Price Comparator API', version: '0.2.0' });
+});
 
-// Minimal compare endpoint - returns example competitor results
-app.get('/compare', (req, res) => {
-  // Example query params: ?q=hotel+name&location=city
-  const q = req.query.q || 'unknown'
-  const location = req.query.location || ''
-  const example = {
-    query: q,
-    location,
-    results: [
-      { provider: 'Booking.com', price: '₹4,200', url: 'https://booking.example' },
-      { provider: 'Airbnb', price: '₹3,800', url: 'https://airbnb.example' }
-    ]
-  }
-  res.json(example)
-})
+/* ── API routes ── */
+app.use('/api', compareRoutes);
 
-module.exports = app
+/* ── Error handler (must be last) ── */
+app.use(errorHandler);
+
+module.exports = app;

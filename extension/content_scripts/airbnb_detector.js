@@ -1,34 +1,65 @@
-// Airbnb detector wrapper - uses shared parser (parsers/airbnb.js)
+/**
+ * airbnb_detector.js — Airbnb content script detector
+ * Uses DetectorUtils for debounced observation, dedup, retry, and SPA nav.
+ * Relies on parseAirbnb / parseAirbnbList from parsers/airbnb.js.
+ */
 (function () {
-  function sendIfFound(data) {
-    if (!data) return;
-    const has = data.title || data.price || data.location;
-    if (has) {
-      chrome.runtime.sendMessage({ type: 'DETECT_RESULT', payload: { site: 'airbnb.com', ...data } });
-      console.log('airbnb_detector sent', data);
-    }
-  }
+  'use strict';
+  const D = window.DetectorUtils;
+  const SITE = 'airbnb.com';
 
-  try {
-    if (typeof window.parseAirbnb === 'function') {
-      const initial = window.parseAirbnb();
-      sendIfFound(initial);
+  function runForCurrentPage() {
+    D.resetDedup(SITE);
+    const pageType = window.getAirbnbPageType();
+    console.log(`[${SITE}] page type: ${pageType}`);
+
+    if (pageType === 'detail') {
+      D.parseWithRetry(window.parseAirbnb, (result) => {
+        D.sendDetection(SITE, result);
+      });
+    } else if (pageType === 'search') {
+      D.parseWithRetry(window.parseAirbnbList, (listings) => {
+        if (listings.length) D.sendBatchDetection(SITE, listings);
+      });
     } else {
-      console.warn('parseAirbnb not available yet');
+      D.parseWithRetry(window.parseAirbnb, (result) => {
+        D.sendDetection(SITE, result);
+      }, { maxRetries: 2 });
     }
-  } catch (err) {
-    console.error('airbnb_detector error', err);
   }
 
-  const observer = new MutationObserver(() => {
-    try {
-      if (typeof window.parseAirbnb === 'function') {
-        const r = window.parseAirbnb();
-        sendIfFound(r);
+  function run() {
+    runForCurrentPage();
+
+    // Debounced observer for dynamic content
+    D.createDebouncedObserver(() => {
+      try {
+        const pageType = window.getAirbnbPageType();
+        if (pageType === 'detail') {
+          const result = window.parseAirbnb();
+          D.sendDetection(SITE, result);
+        } else if (pageType === 'search') {
+          const listings = window.parseAirbnbList();
+          if (listings.length) D.sendBatchDetection(SITE, listings);
+        }
+      } catch (e) {
+        console.error(`[${SITE}] observer error`, e);
       }
-    } catch (e) {
-      console.error('airbnb_detector observer error', e);
-    }
-  });
-  observer.observe(document.documentElement || document.body, { childList: true, subtree: true });
+    }, { delay: 1200 });
+
+    // Airbnb is a SPA — listen for URL changes
+    D.onUrlChange(() => {
+      console.log(`[${SITE}] URL changed, re-parsing`);
+      setTimeout(runForCurrentPage, 800);
+    });
+  }
+
+  if (typeof window.parseAirbnb === 'function') {
+    run();
+  } else {
+    setTimeout(() => {
+      if (typeof window.parseAirbnb === 'function') run();
+      else console.error(`[${SITE}] parser not available`);
+    }, 500);
+  }
 })();

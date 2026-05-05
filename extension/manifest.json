@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Hotel & Airbnb Price Comparator",
-  "version": "0.1.0",
-  "description": "Compare hotel & Airbnb prices side-by-side while browsing.",
+  "version": "0.2.0",
+  "description": "Compare hotel & Airbnb prices side-by-side while browsing Booking.com, Airbnb, and Expedia.",
   "permissions": [
     "storage",
     "notifications",
@@ -12,7 +12,10 @@
   ],
   "host_permissions": [
     "*://*.booking.com/*",
-    "*://*.airbnb.com/*"
+    "*://*.airbnb.com/*",
+    "*://*.airbnb.co.in/*",
+    "*://*.expedia.com/*",
+    "*://*.expedia.co.in/*"
   ],
   "background": {
     "service_worker": "background/service-worker.js"
@@ -20,11 +23,33 @@
   "content_scripts": [
     {
       "matches": ["*://*.booking.com/*"],
-      "js": ["parsers/booking.js", "content_scripts/booking_detector.js"]
+      "js": [
+        "parsers/base.js",
+        "content_scripts/base_detector.js",
+        "parsers/booking.js",
+        "content_scripts/booking_detector.js"
+      ],
+      "run_at": "document_idle"
     },
     {
-      "matches": ["*://*.airbnb.com/*"],
-      "js": ["parsers/airbnb.js", "content_scripts/airbnb_detector.js"]
+      "matches": ["*://*.airbnb.com/*", "*://*.airbnb.co.in/*"],
+      "js": [
+        "parsers/base.js",
+        "content_scripts/base_detector.js",
+        "parsers/airbnb.js",
+        "content_scripts/airbnb_detector.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://*.expedia.com/*", "*://*.expedia.co.in/*"],
+      "js": [
+        "parsers/base.js",
+        "content_scripts/base_detector.js",
+        "parsers/expedia.js",
+        "content_scripts/expedia_detector.js"
+      ],
+      "run_at": "document_idle"
     }
   ],
   "action": {
