@@ -1,13 +1,13 @@
 High‑impact features we can add to (prioritized)
 
-Core detection & scraping
+[DONE] Core detection & scraping
 Content scripts that detect listings (hotel name, location, price) on popular sites.
-Heuristics + site-specific parsers (Booking, Airbnb, Expedia).
+Heuristics + site-specific parsers (Booking, Airbnb, Expedia) implemented with multi-strategy fallback.
 
 
-Matching & search
+[DONE] Matching & search
 Fuzzy matching / normalized place + hotel name resolution.
-Backend search aggregator (optional) to query APIs/scrapers.
+Backend search aggregator using Dice's coefficient to match and sort competitor prices.
 
 
 Price comparison UI (extension popup + side panel)
