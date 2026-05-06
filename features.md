@@ -14,8 +14,8 @@
 * **Description:** Fuzzy matching / normalized place + hotel name resolution.
 * **Implementation:** Backend search aggregator using Dice's coefficient (bigram similarity) to match and sort competitor prices accurately.
 
-### ⏳ 3. Price comparison UI (extension popup + side panel)
-* **Status:** `[TODO]`
+### ✅ 3. Price comparison UI (extension popup + side panel)
+* **Status:** `[DONE]`
 * **Description:** Side popup overlay showing competitor prices, badges for best price, quick links.
 * **Implementation:** In-popup charts (price history) using Chart.js, built with React and TailwindCSS.
 

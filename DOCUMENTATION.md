@@ -61,9 +61,9 @@ The extension utilizes the Service Worker to occasionally poll the backend for u
 ### ✅ Completed
 - **Core detection & scraping**: Content scripts that detect listings (hotel name, location, price) on popular sites using multi-strategy fallbacks.
 - **Matching & search**: Backend search aggregator using Dice's coefficient to match and sort competitor prices accurately.
+- **Price comparison UI**: Side popup overlay showing competitor prices, badges for best price, quick links, and in-popup charts (Chart.js).
 
 ### ⏳ In Progress / Planned
-- **Price comparison UI**: Side popup overlay showing competitor prices, badges for best price, quick links, and in-popup charts (Chart.js).
 - **Real-time updates & notifications**: Background service worker to poll prices and send Chrome notifications on drops.
 - **Data storage & sync**: Local IndexedDB for caching and optional backend for cross-device sync.
 - **Currency, localization & UX**: Auto currency conversion, time zone handling, and i18n.

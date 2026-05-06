@@ -16,6 +16,5 @@ export default defineConfig({
     outDir: '../extension/popup',
     emptyOutDir: true,
   },
-  // Ensure popup.html is preserved as an additional HTML entry
   publicDir: 'public',
 })
