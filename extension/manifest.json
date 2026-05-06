@@ -19,7 +19,10 @@
     "*://*.airbnb.com/*",
     "*://*.airbnb.co.in/*",
     "*://*.expedia.com/*",
-    "*://*.expedia.co.in/*"
+    "*://*.expedia.co.in/*",
+    "*://*.goibibo.com/*",
+    "*://*.makemytrip.com/*",
+    "*://*.agoda.com/*"
   ],
   "background": {
     "service_worker": "background/service-worker.js"
@@ -60,6 +63,42 @@
         "content_scripts/base_detector.js",
         "parsers/expedia.js",
         "content_scripts/expedia_detector.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.goibibo.com/*"
+      ],
+      "js": [
+        "parsers/base.js",
+        "content_scripts/base_detector.js",
+        "parsers/goibibo.js",
+        "content_scripts/goibibo_detector.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.makemytrip.com/*"
+      ],
+      "js": [
+        "parsers/base.js",
+        "content_scripts/base_detector.js",
+        "parsers/makemytrip.js",
+        "content_scripts/makemytrip_detector.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.agoda.com/*"
+      ],
+      "js": [
+        "parsers/base.js",
+        "content_scripts/base_detector.js",
+        "parsers/agoda.js",
+        "content_scripts/agoda_detector.js"
       ],
       "run_at": "document_idle"
     }

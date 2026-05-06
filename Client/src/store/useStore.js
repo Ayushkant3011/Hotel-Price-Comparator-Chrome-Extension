@@ -10,46 +10,47 @@ const useStore = create((set, get) => ({
     set({ status: 'requesting' });
 
     try {
-      if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-        // 1. Get detection from background script for the current tab
-        chrome.runtime.sendMessage({ type: 'GET_DETECTIONS' }, (resp) => {
-          if (chrome.runtime.lastError) {
-            console.error('Runtime error:', chrome.runtime.lastError);
-            set({ status: 'error' });
-            return;
-          }
+      if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage && chrome.tabs) {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          const tabId = tabs && tabs.length > 0 ? tabs[0].id : null;
+          // 1. Get detection from background script for the current tab
+          chrome.runtime.sendMessage({ type: 'GET_DETECTIONS', tabId }, (resp) => {
+            if (chrome.runtime.lastError) {
+              console.error('Runtime error:', chrome.runtime.lastError);
+              set({ status: 'error' });
+              return;
+            }
 
-          const detection = resp?.detection;
-          
-          if (!detection) {
-            set({ status: 'done', currentDetection: null, competitorPrices: [] });
-            return;
-          }
+            const detection = resp?.detection;
+            
+            if (!detection) {
+              set({ status: 'done', currentDetection: null, competitorPrices: [] });
+              return;
+            }
 
-          set({ currentDetection: detection });
+            set({ currentDetection: detection });
 
-          // 2. Fetch competitor prices based on the detected hotel
-          if (detection.title) {
-            chrome.runtime.sendMessage({ 
-              type: 'COMPARE_REQUEST', 
-              hotelName: detection.title, 
-              location: detection.location 
-            }, (compareResp) => {
-              if (compareResp && compareResp.ok && compareResp.data) {
-                // Filter out the current site from competitors to avoid duplicate display
-                // Or keep it to show all options including the current one. We'll keep it for now.
-                set({ 
-                  status: 'done', 
-                  competitorPrices: compareResp.data.matches || [],
-                  matchCount: compareResp.data.matchCount || 0
-                });
-              } else {
-                set({ status: 'done', competitorPrices: [] });
-              }
-            });
-          } else {
-            set({ status: 'done', competitorPrices: [] });
-          }
+            // 2. Fetch competitor prices based on the detected hotel
+            if (detection.title) {
+              chrome.runtime.sendMessage({ 
+                type: 'COMPARE_REQUEST', 
+                hotelName: detection.title, 
+                location: detection.location 
+              }, (compareResp) => {
+                if (compareResp && compareResp.ok && compareResp.data) {
+                  set({ 
+                    status: 'done', 
+                    competitorPrices: compareResp.data.matches || [],
+                    matchCount: compareResp.data.matchCount || 0
+                  });
+                } else {
+                  set({ status: 'done', competitorPrices: [] });
+                }
+              });
+            } else {
+              set({ status: 'done', competitorPrices: [] });
+            }
+          });
         });
       } else {
         // Not running inside extension (dev server fallback)

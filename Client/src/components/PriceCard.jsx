@@ -35,9 +35,14 @@ export default function PriceCard({ competitor, isCheapest }) {
         <div className={`text-lg font-bold tracking-tight ${isCheapest ? 'text-emerald-400' : 'text-slate-200'}`}>
           {competitor.currency} {competitor.price?.toLocaleString()}
         </div>
-        <button className="flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300 transition-colors mt-1 font-medium">
+        <a 
+          href={competitor.url || '#'} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300 transition-colors mt-1 font-medium"
+        >
           View Deal <ExternalLink size={10} />
-        </button>
+        </a>
       </div>
     </div>
   );
