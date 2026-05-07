@@ -91,6 +91,47 @@ try {
         return true;
       }
 
+      /* ── Watch / Unwatch Hotels ── */
+      case 'WATCH_HOTEL': {
+        const hotel = message.payload;
+        chrome.storage.local.get(['watchedHotels'], (res) => {
+          const watched = res.watchedHotels || [];
+          const exists = watched.some(h => h.title === hotel.title && h.location === hotel.location);
+          if (!exists) {
+            watched.push({ ...hotel, watchedAt: Date.now() });
+            chrome.storage.local.set({ watchedHotels: watched }, () => {
+              sendResponse({ ok: true, watched: true });
+              ensureAlarm();
+            });
+          } else {
+            sendResponse({ ok: true, watched: true });
+          }
+        });
+        return true;
+      }
+
+      case 'UNWATCH_HOTEL': {
+        const { title, location } = message.payload;
+        chrome.storage.local.get(['watchedHotels'], (res) => {
+          let watched = res.watchedHotels || [];
+          watched = watched.filter(h => !(h.title === title && h.location === location));
+          chrome.storage.local.set({ watchedHotels: watched }, () => {
+            sendResponse({ ok: true, watched: false });
+          });
+        });
+        return true;
+      }
+
+      case 'CHECK_WATCH_STATUS': {
+        const { title, location } = message.payload;
+        chrome.storage.local.get(['watchedHotels'], (res) => {
+          const watched = res.watchedHotels || [];
+          const isWatched = watched.some(h => h.title === title && h.location === location);
+          sendResponse({ isWatched });
+        });
+        return true;
+      }
+
       default:
         break;
     }
@@ -161,15 +202,36 @@ try {
   /* ──────────────────────────────────────────────
    * Alarms (future price polling)
    * ────────────────────────────────────────────── */
+  function ensureAlarm() {
+    if (chrome.alarms) {
+      chrome.alarms.get('pricePoll', (alarm) => {
+        if (!alarm) {
+          chrome.alarms.create('pricePoll', { periodInMinutes: 360 }); // Every 6 hours
+          console.log('Price poll alarm created');
+        }
+      });
+    }
+  }
+
   if (chrome.alarms && chrome.alarms.onAlarm) {
     chrome.alarms.onAlarm.addListener((alarm) => {
       if (alarm.name === 'pricePoll') {
         console.log('pricePoll alarm fired');
-        // Future: poll stored hotels for price changes
+        performPricePoll();
       }
     });
   } else {
     console.warn('chrome.alarms API not available — skipping alarm setup');
+  }
+
+  async function performPricePoll() {
+    chrome.storage.local.get(['watchedHotels'], async (res) => {
+      const watched = res.watchedHotels || [];
+      if (watched.length === 0) return;
+
+      console.log(`Polling prices for ${watched.length} hotels...`);
+      // Future: Iterate through watched hotels, fetch current prices, and notify if dropped
+    });
   }
 
   /* ──────────────────────────────────────────────

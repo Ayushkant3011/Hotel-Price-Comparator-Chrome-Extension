@@ -5,6 +5,7 @@ const useStore = create((set, get) => ({
   currentDetection: null,
   competitorPrices: [],
   matchCount: 0,
+  isWatched: false,
 
   fetchData: () => {
     set({ status: 'requesting' });
@@ -24,11 +25,19 @@ const useStore = create((set, get) => ({
             const detection = resp?.detection;
             
             if (!detection) {
-              set({ status: 'done', currentDetection: null, competitorPrices: [] });
+              set({ status: 'done', currentDetection: null, competitorPrices: [], isWatched: false });
               return;
             }
 
             set({ currentDetection: detection });
+
+            // Check if this hotel is being watched
+            chrome.runtime.sendMessage({ 
+              type: 'CHECK_WATCH_STATUS', 
+              payload: { title: detection.title, location: detection.location } 
+            }, (statusResp) => {
+              set({ isWatched: !!statusResp?.isWatched });
+            });
 
             // 2. Fetch competitor prices based on the detected hotel
             if (detection.title) {
@@ -69,13 +78,30 @@ const useStore = create((set, get) => ({
             { site: 'expedia.com', price: 11800, currency: 'INR', name: 'The Taj Mahal Palace Hotel' },
             { site: 'booking.com', price: 12500, currency: 'INR', name: 'Taj Mahal Palace' },
             { site: 'airbnb.com', price: 13200, currency: 'INR', name: 'Taj Mahal Palace Mumbai' }
-          ]
+          ],
+          isWatched: false
         });
       }
     } catch (err) {
       console.error('Store fetch error', err);
       set({ status: 'error' });
     }
+  },
+
+  toggleWatch: () => {
+    const { currentDetection, isWatched } = get();
+    if (!currentDetection) return;
+
+    const type = isWatched ? 'UNWATCH_HOTEL' : 'WATCH_HOTEL';
+    const payload = isWatched 
+      ? { title: currentDetection.title, location: currentDetection.location }
+      : currentDetection;
+
+    chrome.runtime.sendMessage({ type, payload }, (resp) => {
+      if (resp && resp.ok) {
+        set({ isWatched: !isWatched });
+      }
+    });
   }
 }));
 
