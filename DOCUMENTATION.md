@@ -29,11 +29,18 @@ The repository is split into three main parts:
 - **State Management**: Uses Zustand (`useStore.js`) to manage global state such as the currently detected hotel, competitor prices, and UI toggles.
 - **Data Visualization**: Integrates `Chart.js` (`PriceChart.jsx`) to display animated bar charts or line graphs of historical price data.
 - **Build Tooling**: Uses Vite to compile the React app into static assets that can be loaded in the extension's `popup.html` or side panel.
+- **Email Prompt for Price Watch**: The "Watch Price" button now prompts the user to enter their email address. The email is validated and sent to the background script along with the hotel details.
 
 ### 3. The Server Backend (`/Server`)
-- **Express API**: Exposes RESTful endpoints for the extension to fetch cross-platform prices.
+- **Express API**: Exposes RESTful endpoints for the extension to fetch cross-platform prices and handle email notifications.
 - **Architecture**: Follows a standard MVC-like pattern (`/routes`, `/controllers`, `/services`, `/utils`, `/middleware`).
 - **Matching Engine**: Employs string similarity algorithms (see "Concepts Explained" below) to ensure that the hotel detected on one site matches the hotel queried on another.
+- **Email Notifications**: A new `/watch` endpoint has been added to handle email notifications. When a user starts watching a price, the backend sends a confirmation email to the provided email address.
+
+---
+
+### Email Notifications
+When a user clicks the "Watch Price" button, they are prompted to enter their email address. The email address, along with the hotel details, is sent to the background script. The background script saves this information in `chrome.storage.local` and triggers a backend API to send a confirmation email to the user. This feature ensures that users are notified of price drops for their watched hotels.
 
 ---
 
@@ -62,6 +69,7 @@ The extension utilizes the Service Worker to occasionally poll the backend for u
 - **Core detection & scraping**: Content scripts that detect listings (hotel name, location, price) on popular sites using multi-strategy fallbacks.
 - **Matching & search**: Backend search aggregator using Dice's coefficient to match and sort competitor prices accurately.
 - **Price comparison UI**: Side popup overlay showing competitor prices, badges for best price, quick links, and in-popup charts (Chart.js).
+- **Price Watching & Notifications**: Users can now watch hotel prices by entering their email address. The extension sends a confirmation email and saves the hotel and email details for future price drop notifications.
 
 ### ⏳ In Progress / Planned
 - **Real-time updates & notifications**: Background service worker to poll prices and send Chrome notifications on drops.
