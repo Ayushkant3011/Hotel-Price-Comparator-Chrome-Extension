@@ -1,10 +1,32 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { MapPin, Star, Bell, BellRing } from 'lucide-react';
 import useStore from '../store/useStore';
 
 export default function CurrentListing({ detection }) {
   const { isWatched, toggleWatch } = useStore();
+  const [showEmailPrompt, setShowEmailPrompt] = useState(false);
+  const [email, setEmail] = useState('');
+
   if (!detection) return null;
+
+  const handleWatchClick = (e) => {
+    e.preventDefault();
+    if (!isWatched) {
+      setShowEmailPrompt(true); // Show the email prompt
+    } else {
+      toggleWatch(detection.id, null); // Unwatch without email
+    }
+  };
+
+  const handleEmailSubmit = (e) => {
+    e.preventDefault();
+    if (email.trim() === '' || !/\S+@\S+\.\S+/.test(email)) {
+      alert('Please enter a valid email address.');
+      return;
+    }
+    toggleWatch(detection.id, email); // Watch with email
+    setShowEmailPrompt(false);
+  };
 
   return (
     <div className="mb-6 overflow-hidden rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md shadow-xl transition-all duration-300 hover:border-white/20 hover:bg-white/10">
@@ -44,10 +66,7 @@ export default function CurrentListing({ detection }) {
               Current Price <span className="capitalize">({detection.site.split('.')[0]})</span>
             </div>
             <button 
-              onClick={(e) => {
-                e.preventDefault();
-                toggleWatch();
-              }}
+              onClick={handleWatchClick}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-300 ${
                 isWatched 
                   ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
@@ -63,6 +82,40 @@ export default function CurrentListing({ detection }) {
           </div>
         </div>
       </div>
+
+      {/* Email Prompt Modal */}
+      {showEmailPrompt && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+            <h3 className="text-lg font-bold mb-4">Enter your email to watch this price:</h3>
+            <form onSubmit={handleEmailSubmit}>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                className="w-full p-2 border border-gray-300 rounded-lg mb-4"
+                required
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowEmailPrompt(false)}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg"
+                >
+                  Submit
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
