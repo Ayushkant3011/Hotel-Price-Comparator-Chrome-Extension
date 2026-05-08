@@ -102,6 +102,9 @@ try {
             chrome.storage.local.set({ watchedHotels: watched }, () => {
               sendResponse({ ok: true, watched: true });
               ensureAlarm();
+
+              // Trigger backend API for email processing
+              sendWatchEmailToBackend(hotel);
             });
           } else {
             sendResponse({ ok: true, watched: true });
@@ -243,4 +246,29 @@ try {
 
 } catch (err) {
   console.error('Service worker initialization error:', err);
+}
+
+async function sendWatchEmailToBackend(hotel) {
+  try {
+    const resp = await fetch(`${API_BASE}/watch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: hotel.title,
+        location: hotel.location,
+        price: hotel.price,
+        currency: hotel.currency,
+        email: hotel.email, // Include the email address
+        watchedAt: hotel.watchedAt,
+      }),
+    });
+
+    if (!resp.ok) {
+      console.warn('Backend /watch returned', resp.status);
+    } else {
+      console.log('Watch email sent to backend successfully');
+    }
+  } catch (err) {
+    console.error('Error sending watch email to backend:', err.message);
+  }
 }
