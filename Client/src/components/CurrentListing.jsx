@@ -24,7 +24,8 @@ export default function CurrentListing({ detection }) {
       alert('Please enter a valid email address.');
       return;
     }
-    toggleWatch(detection.id, email); // Watch with email
+
+    toggleWatch(email); // Pass the email to the toggleWatch function
     setShowEmailPrompt(false);
   };
 

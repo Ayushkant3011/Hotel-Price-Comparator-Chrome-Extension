@@ -88,14 +88,14 @@ const useStore = create((set, get) => ({
     }
   },
 
-  toggleWatch: () => {
+  toggleWatch: (email) => {
     const { currentDetection, isWatched } = get();
     if (!currentDetection) return;
 
     const type = isWatched ? 'UNWATCH_HOTEL' : 'WATCH_HOTEL';
     const payload = isWatched 
       ? { title: currentDetection.title, location: currentDetection.location }
-      : currentDetection;
+      : { ...currentDetection, email }; // Include email in the payload
 
     chrome.runtime.sendMessage({ type, payload }, (resp) => {
       if (resp && resp.ok) {
