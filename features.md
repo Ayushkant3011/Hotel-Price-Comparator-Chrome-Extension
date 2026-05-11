@@ -20,7 +20,7 @@
 * **Implementation:** In-popup charts (price history) using Chart.js, built with React and TailwindCSS.
 
 ### ⏳ 4. Real-time updates & notifications
-* **Status:** `[TODO]`
+* **Status:** `[IN PROGRESS]`
 * **Description:** Background service worker to poll/watch prices and send Chrome notifications on drops.
 
 ### ⏳ 5. Data storage & sync
