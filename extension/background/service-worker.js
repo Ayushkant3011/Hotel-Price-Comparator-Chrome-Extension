@@ -232,8 +232,54 @@ try {
       const watched = res.watchedHotels || [];
       if (watched.length === 0) return;
 
-      console.log(`Polling prices for ${watched.length} hotels...`);
-      // Future: Iterate through watched hotels, fetch current prices, and notify if dropped
+      console.log(`[PricePoll] Checking ${watched.length} hotels for price drops...`);
+
+      let storageUpdated = false;
+      const newList = [...watched];
+
+      for (let i = 0; i < newList.length; i++) {
+        const hotel = newList[i];
+        try {
+          // Fetch current market prices for this hotel
+          const data = await fetchComparison(hotel.title, hotel.location);
+
+          if (data && data.matches && data.matches.length > 0) {
+            // matches are sorted by price ascending by the backend
+            const validMatches = data.matches.filter(m => m.price != null && m.price > 0);
+            if (validMatches.length === 0) continue;
+
+            const bestMatch = validMatches[0];
+
+            // Check if found price is significantly lower (e.g., more than 1 unit)
+            // This prevents floating point noise issues
+            if (bestMatch.price < (hotel.price - 0.5)) {
+              const dropAmount = Math.round(hotel.price - bestMatch.price);
+              const percent = Math.round((dropAmount / hotel.price) * 100);
+
+              console.log(`[PricePoll] DROP DETECTED for ${hotel.title}: ${hotel.price} -> ${bestMatch.price}`);
+
+              notify(
+                `Price Drop Alert! 📉`,
+                `${hotel.title} is now ${hotel.currency} ${bestMatch.price} on ${bestMatch.site} (Saved ${hotel.currency} ${dropAmount} / ${percent}%)`
+              );
+
+              // Update the stored price to the new lower price to avoid duplicate notifications
+              newList[i] = {
+                ...hotel,
+                price: bestMatch.price,
+                lastPriceDropAt: Date.now()
+              };
+              storageUpdated = true;
+            }
+          }
+        } catch (err) {
+          console.warn(`[PricePoll] Failed to check ${hotel.title}:`, err.message);
+        }
+      }
+
+      if (storageUpdated) {
+        chrome.storage.local.set({ watchedHotels: newList });
+      }
     });
   }
 
