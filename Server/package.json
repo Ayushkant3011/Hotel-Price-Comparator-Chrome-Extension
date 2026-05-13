@@ -8,12 +8,18 @@
     "dev": "node --watch server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["hotel", "price", "comparator", "chrome-extension"],
+  "keywords": [
+    "hotel",
+    "price",
+    "comparator",
+    "chrome-extension"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "nodemailer": "^8.0.7"
   }
 }

@@ -3,6 +3,7 @@
  */
 
 const priceService = require('../services/price.service');
+const emailService = require('../services/email.service');
 
 /**
  * POST /api/detect
@@ -84,8 +85,9 @@ function handleListDetections(req, res) {
 /**
  * POST /api/watch
  * Receive a watch request (hotel + email) from the extension.
+ * Sends a confirmation email if SMTP is configured.
  */
-function handleWatch(req, res) {
+async function handleWatch(req, res) {
   const { title, location, price, currency, email } = req.body;
 
   if (!title || !email) {
@@ -95,7 +97,15 @@ function handleWatch(req, res) {
   }
 
   console.log(`[Watch] ${email} is now watching "${title}" at ${currency} ${price}`);
-  // TODO: Wire up Nodemailer to send confirmation email
+
+  // Send confirmation email (non-blocking — don't fail the request if email fails)
+  try {
+    await emailService.sendWatchConfirmation({ email, title, location, price, currency });
+    console.log(`[Watch] Confirmation email sent to ${email}`);
+  } catch (err) {
+    console.warn(`[Watch] Email failed (SMTP may not be configured): ${err.message}`);
+  }
+
   res.status(201).json({ ok: true, message: 'Watch registered' });
 }
 
