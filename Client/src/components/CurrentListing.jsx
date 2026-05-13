@@ -14,7 +14,7 @@ export default function CurrentListing({ detection }) {
     if (!isWatched) {
       setShowEmailPrompt(true); // Show the email prompt
     } else {
-      toggleWatch(detection.id, null); // Unwatch without email
+      toggleWatch(); // Unwatch
     }
   };
 

@@ -18,4 +18,7 @@ router.post('/compare', controller.handleComparePost);
 // List all stored detections (debug/admin)
 router.get('/detections', controller.handleListDetections);
 
+// Receive a watch request (hotel + email) from the extension
+router.post('/watch', controller.handleWatch);
+
 module.exports = router;

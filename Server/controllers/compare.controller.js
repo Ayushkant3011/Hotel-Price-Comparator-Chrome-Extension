@@ -81,9 +81,28 @@ function handleListDetections(req, res) {
   });
 }
 
+/**
+ * POST /api/watch
+ * Receive a watch request (hotel + email) from the extension.
+ */
+function handleWatch(req, res) {
+  const { title, location, price, currency, email } = req.body;
+
+  if (!title || !email) {
+    return res.status(400).json({
+      error: 'Missing required fields: title and email',
+    });
+  }
+
+  console.log(`[Watch] ${email} is now watching "${title}" at ${currency} ${price}`);
+  // TODO: Wire up Nodemailer to send confirmation email
+  res.status(201).json({ ok: true, message: 'Watch registered' });
+}
+
 module.exports = {
   handleDetect,
   handleCompare,
   handleComparePost,
   handleListDetections,
+  handleWatch,
 };
