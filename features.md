@@ -22,10 +22,12 @@
 ### ⏳ 4. Real-time updates & notifications
 * **Status:** `[IN PROGRESS]`
 * **Description:** Background service worker to poll/watch prices and send Chrome notifications on drops.
+* **Implementation:** Watch/unwatch via `chrome.storage.local`, 6-hour polling alarm via `chrome.alarms`, Chrome notifications on price drops. Email prompt modal in the UI. Server `POST /api/watch` endpoint exists but Nodemailer email delivery is not yet wired up.
 
 ### ⏳ 5. Data storage & sync
-* **Status:** `[TODO]`
+* **Status:** `[IN PROGRESS]`
 * **Description:** Local IndexedDB for fast caching; optional backend (Express + MongoDB/Firebase) for cross-device sync and history.
+* **Implementation:** Watched hotels stored in `chrome.storage.local`. Full IndexedDB and cross-device sync not yet implemented.
 
 ### ⏳ 6. Currency, localization & UX
 * **Status:** `[TODO]`

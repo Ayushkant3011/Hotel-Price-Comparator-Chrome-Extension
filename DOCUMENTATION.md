@@ -10,9 +10,9 @@ The Hotel & Airbnb Price Comparator is a Chrome Extension designed to help users
 ## Project Structure
 The repository is split into three main parts:
 
-- **`/extension`**: The core Chrome Extension files (Manifest V3). It handles the content scraping, background tasks, and injection of the UI.
+- **`/extension`**: The core Chrome Extension files (Manifest V3). It handles the content scraping, background tasks, price watching, and injection of the UI.
 - **`/Client`**: The React-based frontend. This is built using Vite, React, and TailwindCSS, and serves as the UI for the extension's popup and side panel.
-- **`/Server`**: The Node.js and Express backend API. It handles search aggregation, complex matching logic, and (in the future) user authentication and database storage.
+- **`/Server`**: The Node.js and Express backend API. It handles search aggregation, complex matching logic, watch registration, and (in the future) email notifications and database storage.
 
 ---
 
@@ -22,25 +22,41 @@ The repository is split into three main parts:
 - **Manifest V3**: Uses the modern Chrome extension architecture.
 - **Content Scripts (`/content_scripts`)**: Injected into supported booking sites. They use DOM heuristics to locate hotel details on the page.
 - **Parsers (`/parsers`)**: Site-specific parsing logic (e.g., `expedia.js`, `booking_detector.js`). They use multiple strategies (data-testid, CSS selectors, JSON-LD, Meta tags, URL parsing) to reliably extract data even if the site structure changes.
-- **Background Scripts (`/background`)**: The service worker orchestrates communication between the content scripts, the React UI, and the backend Server. It manages background polling for price drops and notification dispatching.
+- **Background Scripts (`/background`)**: The service worker orchestrates communication between the content scripts, the React UI, and the backend Server. It manages:
+  - **Price Watching**: Persists a list of watched hotels in `chrome.storage.local` via `WATCH_HOTEL`, `UNWATCH_HOTEL`, and `CHECK_WATCH_STATUS` messages.
+  - **Background Polling**: Uses `chrome.alarms` to poll the backend every 6 hours (`performPricePoll`). Compares current prices against stored prices and fires Chrome notifications on drops.
+  - **Backend Forwarding**: Sends watch requests to `POST /api/watch` for server-side processing.
 
 ### 2. The Client UI (`/Client`)
 - **React & TailwindCSS**: Delivers a premium, high-fidelity, glassmorphic user interface.
-- **State Management**: Uses Zustand (`useStore.js`) to manage global state such as the currently detected hotel, competitor prices, and UI toggles.
+- **State Management**: Uses Zustand (`useStore.js`) to manage global state including detected hotel, competitor prices, and watch status (`isWatched`, `toggleWatch`).
 - **Data Visualization**: Integrates `Chart.js` (`PriceChart.jsx`) to display animated bar charts or line graphs of historical price data.
-- **Build Tooling**: Uses Vite to compile the React app into static assets that can be loaded in the extension's `popup.html` or side panel.
-- **Email Prompt for Price Watch**: The "Watch Price" button now prompts the user to enter their email address. The email is validated and sent to the background script along with the hotel details.
+- **Build Tooling**: Uses Vite to compile the React app into static assets output to `/extension/popup/`.
+- **Price Watch UI**: The `CurrentListing.jsx` component includes a "Watch Price" button that prompts for an email address via a glassmorphic modal before registering the watch.
 
 ### 3. The Server Backend (`/Server`)
-- **Express API**: Exposes RESTful endpoints for the extension to fetch cross-platform prices and handle email notifications.
+- **Express API**: Exposes RESTful endpoints:
+  - `POST /api/detect` — Receive and store a detection from the extension.
+  - `GET /api/compare` — Search competitor prices by hotel name and location.
+  - `POST /api/compare` — Same as above, via JSON body.
+  - `GET /api/detections` — List all stored detections (debug/admin).
+  - `POST /api/watch` — Register a watch request (hotel + email). Currently logs and acknowledges; email sending via Nodemailer is a TODO.
 - **Architecture**: Follows a standard MVC-like pattern (`/routes`, `/controllers`, `/services`, `/utils`, `/middleware`).
-- **Matching Engine**: Employs string similarity algorithms (see "Concepts Explained" below) to ensure that the hotel detected on one site matches the hotel queried on another.
-- **Email Notifications**: A new `/watch` endpoint has been added to handle email notifications. When a user starts watching a price, the backend sends a confirmation email to the provided email address.
+- **Matching Engine**: Employs Dice's coefficient (bigram similarity) to match hotels across platforms.
 
 ---
 
-### Email Notifications
-When a user clicks the "Watch Price" button, they are prompted to enter their email address. The email address, along with the hotel details, is sent to the background script. The background script saves this information in `chrome.storage.local` and triggers a backend API to send a confirmation email to the user. This feature ensures that users are notified of price drops for their watched hotels.
+## Price Watching & Notifications Flow
+
+1. User clicks "Watch Price" on a detected hotel in the popup.
+2. A glassmorphic modal prompts for their email address.
+3. The email + hotel details are sent to the background service worker via `WATCH_HOTEL`.
+4. The service worker saves the hotel to `chrome.storage.local` and creates a `pricePoll` alarm (6-hour interval).
+5. The service worker also forwards the request to `POST /api/watch` on the backend.
+6. Every 6 hours, `performPricePoll` iterates all watched hotels, fetches current prices via the backend, and sends a Chrome notification if a price drop is detected.
+7. After a drop notification, the stored price is updated to prevent duplicate alerts.
+
+> **Note**: Server-side email notifications (e.g., via Nodemailer) are not yet implemented. The `POST /api/watch` endpoint currently logs and acknowledges the request.
 
 ---
 
@@ -59,7 +75,7 @@ When the extension finds a hotel named "The Grand Plaza Hotel" in New York, it n
 To solve this, the backend uses **Fuzzy Matching**, specifically **Dice's coefficient (bigram similarity)**. It breaks the strings into two-character chunks (bigrams) and calculates the percentage of shared bigrams. If the similarity score crosses a certain threshold, the listings are considered a match.
 
 ### Background Polling & State Sync
-The extension utilizes the Service Worker to occasionally poll the backend for updated prices on saved items. It leverages `IndexedDB` (for fast local caching of previous prices) to avoid hitting the backend repeatedly for the same data and to provide instant load times when the popup is opened.
+The service worker uses `chrome.alarms` to poll the backend every 6 hours for updated prices on watched hotels. Watch data is persisted in `chrome.storage.local` so it survives browser restarts. The popup auto-checks the watch status on open via `CHECK_WATCH_STATUS`.
 
 ---
 
@@ -69,10 +85,10 @@ The extension utilizes the Service Worker to occasionally poll the backend for u
 - **Core detection & scraping**: Content scripts that detect listings (hotel name, location, price) on popular sites using multi-strategy fallbacks.
 - **Matching & search**: Backend search aggregator using Dice's coefficient to match and sort competitor prices accurately.
 - **Price comparison UI**: Side popup overlay showing competitor prices, badges for best price, quick links, and in-popup charts (Chart.js).
-- **Price Watching & Notifications**: Users can now watch hotel prices by entering their email address. The extension sends a confirmation email and saves the hotel and email details for future price drop notifications.
+- **Price watching (client-side)**: Users can watch/unwatch hotels with email input. Data persisted in `chrome.storage.local`. Background polling via `chrome.alarms` with Chrome notification on price drops.
 
 ### ⏳ In Progress / Planned
-- **Real-time updates & notifications**: Background service worker to poll prices and send Chrome notifications on drops.
+- **Email notifications**: Server-side email delivery via Nodemailer for watch confirmations and price drop alerts.
 - **Data storage & sync**: Local IndexedDB for caching and optional backend for cross-device sync.
 - **Currency, localization & UX**: Auto currency conversion, time zone handling, and i18n.
 - **Authentication & personalization**: Firebase / Google OAuth for saved favorites and alerts.
@@ -82,3 +98,4 @@ The extension utilizes the Service Worker to occasionally poll the backend for u
 
 ---
 *End of documentation. Remember to update this file with new features and architectural changes as they are implemented.*
+
