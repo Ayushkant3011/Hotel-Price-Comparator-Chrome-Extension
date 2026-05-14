@@ -263,6 +263,16 @@ try {
                 `${hotel.title} is now ${hotel.currency} ${bestMatch.price} on ${bestMatch.site} (Saved ${hotel.currency} ${dropAmount} / ${percent}%)`
               );
 
+              // Tell backend to send the price drop email
+              if (hotel.email) {
+                sendPriceDropEmailToBackend({
+                  ...hotel,
+                  oldPrice: hotel.price,
+                  newPrice: bestMatch.price,
+                  site: bestMatch.site
+                });
+              }
+
               // Update the stored price to the new lower price to avoid duplicate notifications
               newList[i] = {
                 ...hotel,
@@ -304,6 +314,31 @@ try {
       else console.log('Watch email sent to backend successfully');
     } catch (err) {
       console.debug('Backend /watch not reachable:', err.message);
+    }
+  }
+
+  /* ──────────────────────────────────────────────
+   * Send price drop email to backend
+   * ────────────────────────────────────────────── */
+  async function sendPriceDropEmailToBackend(dropData) {
+    try {
+      const resp = await fetch(`${API_BASE}/price-drop`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: dropData.email,
+          title: dropData.title,
+          location: dropData.location,
+          oldPrice: dropData.oldPrice,
+          newPrice: dropData.newPrice,
+          currency: dropData.currency,
+          site: dropData.site
+        }),
+      });
+      if (!resp.ok) console.warn('Backend /price-drop returned', resp.status);
+      else console.log('Price drop email triggered successfully');
+    } catch (err) {
+      console.debug('Backend /price-drop not reachable:', err.message);
     }
   }
 
