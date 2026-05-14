@@ -1,5 +1,5 @@
 /**
- * price.service.js — In-memory price detection store
+ * price.service.js — MongoDB price detection store
  *
  * Stores recent detections from the Chrome extension and provides
  * competitor price lookup by fuzzy hotel name matching.
@@ -7,20 +7,7 @@
 
 const { normalizeHotelName, normalizeLocation, parsePrice } = require('../utils/normalize');
 const { findMatches } = require('./matcher.service');
-
-/**
- * In-memory store of detections.
- * Key: normalized hotel name
- * Value: Map<site, detection>
- *
- * In production this would be backed by MongoDB/Redis.
- */
-const detections = new Map();
-
-/**
- * Maximum age of a detection before it's considered stale (ms).
- */
-const MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
+const Detection = require('../models/Detection.model');
 
 /**
  * Store a detection from the extension.
@@ -33,9 +20,9 @@ const MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
  * @param {string} [detection.currency]
  * @param {string} [detection.priceRaw]
  * @param {string} [detection.url]
- * @returns {{ stored: boolean, key: string }}
+ * @returns {Promise<{ stored: boolean, key: string }>}
  */
-function storeDetection(detection) {
+async function storeDetection(detection) {
   if (!detection || !detection.title) {
     return { stored: false, key: null };
   }
@@ -52,7 +39,7 @@ function storeDetection(detection) {
     currency = currency || parsed.currency;
   }
 
-  const entry = {
+  const updateData = {
     name: detection.title,
     normalizedName: key,
     site: detection.site,
@@ -66,18 +53,24 @@ function storeDetection(detection) {
     checkOut: detection.checkOut || null,
     rating: detection.rating || null,
     imageUrl: detection.imageUrl || null,
-    storedAt: new Date().toISOString(),
     detectedAt: detection.detectedAt || new Date().toISOString(),
+    storedAt: new Date() // Updates TTL
   };
 
-  // Get or create the hotel's detection map
-  if (!detections.has(key)) {
-    detections.set(key, new Map());
-  }
-  detections.get(key).set(detection.site, entry);
+  try {
+    // Upsert: Update if normalizedName + site exists, otherwise insert
+    await Detection.findOneAndUpdate(
+      { normalizedName: key, site: detection.site },
+      { $set: updateData },
+      { upsert: true, new: true }
+    );
 
-  console.log(`[PriceService] Stored: "${detection.title}" (${detection.site}) → ${price} ${currency || ''}`);
-  return { stored: true, key };
+    console.log(`[PriceService] Stored in DB: "${detection.title}" (${detection.site}) → ${price} ${currency || ''}`);
+    return { stored: true, key };
+  } catch (err) {
+    console.error(`[PriceService] Error storing detection:`, err);
+    return { stored: false, key: null };
+  }
 }
 
 /**
@@ -85,85 +78,70 @@ function storeDetection(detection) {
  *
  * @param {string} hotelName
  * @param {string} [location]
- * @returns {{ query: string, location: string, matches: object[] }}
+ * @returns {Promise<{ query: string, location: string, matches: object[] }>}
  */
-function findCompetitorPrices(hotelName, location) {
+async function findCompetitorPrices(hotelName, location) {
   if (!hotelName) {
     return { query: hotelName, location, matches: [] };
   }
 
-  // Build flat list of all stored detections
-  const allDetections = [];
-  for (const [, siteMap] of detections) {
-    for (const [, entry] of siteMap) {
-      // Skip stale entries
-      const age = Date.now() - new Date(entry.storedAt).getTime();
-      if (age > MAX_AGE_MS) continue;
-      allDetections.push(entry);
+  try {
+    // Fetch all active detections from the database
+    // The TTL index automatically removes docs older than 24h
+    const allDetections = await Detection.find({}).lean();
+
+    // Find fuzzy matches using existing logic
+    const matched = findMatches(hotelName, location, allDetections, 0.5);
+
+    // Group by site — only keep best match per site
+    const bySite = new Map();
+    for (const { candidate, similarity } of matched) {
+      const existing = bySite.get(candidate.site);
+      if (!existing || existing.similarity < similarity) {
+        bySite.set(candidate.site, { ...candidate, similarity });
+      }
     }
+
+    const matches = Array.from(bySite.values()).sort((a, b) => {
+      // Sort by price ascending (cheapest first), nulls last
+      if (a.price === null) return 1;
+      if (b.price === null) return -1;
+      return a.price - b.price;
+    });
+
+    return {
+      query: hotelName,
+      location: location || null,
+      matchCount: matches.length,
+      matches,
+    };
+  } catch (err) {
+    console.error(`[PriceService] Error finding competitor prices:`, err);
+    return { query: hotelName, location, matches: [] };
   }
-
-  // Find fuzzy matches
-  const matched = findMatches(hotelName, location, allDetections, 0.5);
-
-  // Group by site — only keep best match per site
-  const bySite = new Map();
-  for (const { candidate, similarity } of matched) {
-    const existing = bySite.get(candidate.site);
-    if (!existing || existing.similarity < similarity) {
-      bySite.set(candidate.site, { ...candidate, similarity });
-    }
-  }
-
-  const matches = Array.from(bySite.values()).sort((a, b) => {
-    // Sort by price ascending (cheapest first), nulls last
-    if (a.price === null) return 1;
-    if (b.price === null) return -1;
-    return a.price - b.price;
-  });
-
-  return {
-    query: hotelName,
-    location: location || null,
-    matchCount: matches.length,
-    matches,
-  };
 }
 
 /**
  * Get all stored detections (for debugging/admin).
- * @returns {object[]}
+ * @returns {Promise<object[]>}
  */
-function getAllDetections() {
-  const all = [];
-  for (const [, siteMap] of detections) {
-    for (const [, entry] of siteMap) {
-      all.push(entry);
-    }
+async function getAllDetections() {
+  try {
+    return await Detection.find({}).lean();
+  } catch (err) {
+    console.error(`[PriceService] Error getting all detections:`, err);
+    return [];
   }
-  return all;
 }
 
 /**
  * Clear stale entries from the store.
+ * Note: MongoDB handles TTL deletion automatically via the `storedAt` index.
+ * This function is kept for API compatibility if called elsewhere.
  */
 function cleanup() {
-  let removed = 0;
-  for (const [key, siteMap] of detections) {
-    for (const [site, entry] of siteMap) {
-      const age = Date.now() - new Date(entry.storedAt).getTime();
-      if (age > MAX_AGE_MS) {
-        siteMap.delete(site);
-        removed++;
-      }
-    }
-    if (siteMap.size === 0) detections.delete(key);
-  }
-  if (removed > 0) console.log(`[PriceService] Cleaned up ${removed} stale entries`);
+  console.log(`[PriceService] Cleanup called, but MongoDB handles TTL automatically.`);
 }
-
-// Run cleanup every hour
-setInterval(cleanup, 60 * 60 * 1000);
 
 module.exports = {
   storeDetection,

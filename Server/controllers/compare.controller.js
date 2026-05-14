@@ -9,77 +9,93 @@ const emailService = require('../services/email.service');
  * POST /api/detect
  * Receive a detection from the Chrome extension and store it.
  */
-function handleDetect(req, res) {
-  const detection = req.body;
+async function handleDetect(req, res, next) {
+  try {
+    const detection = req.body;
 
-  if (!detection || !detection.title) {
-    return res.status(400).json({
-      error: 'Missing required field: title',
-      hint: 'Send a JSON body with at least { title, site }',
+    if (!detection || !detection.title) {
+      return res.status(400).json({
+        error: 'Missing required field: title',
+        hint: 'Send a JSON body with at least { title, site }',
+      });
+    }
+
+    if (!detection.site) {
+      return res.status(400).json({
+        error: 'Missing required field: site',
+        hint: 'Send a JSON body with at least { title, site }',
+      });
+    }
+
+    const result = await priceService.storeDetection(detection);
+    res.status(201).json({
+      ok: true,
+      stored: result.stored,
+      key: result.key,
     });
+  } catch (err) {
+    next(err);
   }
-
-  if (!detection.site) {
-    return res.status(400).json({
-      error: 'Missing required field: site',
-      hint: 'Send a JSON body with at least { title, site }',
-    });
-  }
-
-  const result = priceService.storeDetection(detection);
-  res.status(201).json({
-    ok: true,
-    stored: result.stored,
-    key: result.key,
-  });
 }
 
 /**
  * GET /api/compare?q=hotel+name&location=city
  * Search for competitor prices by hotel name and optional location.
  */
-function handleCompare(req, res) {
-  const { q, location } = req.query;
+async function handleCompare(req, res, next) {
+  try {
+    const { q, location } = req.query;
 
-  if (!q) {
-    return res.status(400).json({
-      error: 'Missing required query parameter: q',
-      hint: 'Usage: GET /api/compare?q=hotel+name&location=city',
-    });
+    if (!q) {
+      return res.status(400).json({
+        error: 'Missing required query parameter: q',
+        hint: 'Usage: GET /api/compare?q=hotel+name&location=city',
+      });
+    }
+
+    const result = await priceService.findCompetitorPrices(q, location);
+    res.json(result);
+  } catch (err) {
+    next(err);
   }
-
-  const result = priceService.findCompetitorPrices(q, location);
-  res.json(result);
 }
 
 /**
  * POST /api/compare
  * Search for competitor prices using a JSON body.
  */
-function handleComparePost(req, res) {
-  const { hotelName, title, location } = req.body;
-  const name = hotelName || title;
+async function handleComparePost(req, res, next) {
+  try {
+    const { hotelName, title, location } = req.body;
+    const name = hotelName || title;
 
-  if (!name) {
-    return res.status(400).json({
-      error: 'Missing required field: hotelName or title',
-    });
+    if (!name) {
+      return res.status(400).json({
+        error: 'Missing required field: hotelName or title',
+      });
+    }
+
+    const result = await priceService.findCompetitorPrices(name, location);
+    res.json(result);
+  } catch (err) {
+    next(err);
   }
-
-  const result = priceService.findCompetitorPrices(name, location);
-  res.json(result);
 }
 
 /**
  * GET /api/detections
  * List all stored detections (debug/admin endpoint).
  */
-function handleListDetections(req, res) {
-  const all = priceService.getAllDetections();
-  res.json({
-    count: all.length,
-    detections: all,
-  });
+async function handleListDetections(req, res, next) {
+  try {
+    const all = await priceService.getAllDetections();
+    res.json({
+      count: all.length,
+      detections: all,
+    });
+  } catch (err) {
+    next(err);
+  }
 }
 
 /**
