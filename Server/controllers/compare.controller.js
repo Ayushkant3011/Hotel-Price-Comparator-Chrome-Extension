@@ -109,10 +109,34 @@ async function handleWatch(req, res) {
   res.status(201).json({ ok: true, message: 'Watch registered' });
 }
 
+/**
+ * POST /api/price-drop
+ * Send a price drop alert email when the background poll detects a drop.
+ */
+async function handlePriceDrop(req, res) {
+  const { email, title, location, oldPrice, newPrice, currency, site } = req.body;
+
+  if (!email || !title || oldPrice == null || newPrice == null) {
+    return res.status(400).json({
+      error: 'Missing required fields: email, title, oldPrice, newPrice',
+    });
+  }
+
+  try {
+    await emailService.sendPriceDropAlert({ email, title, location, oldPrice, newPrice, currency, site });
+    console.log(`[PriceDrop] Alert email sent to ${email} for "${title}"`);
+    res.json({ ok: true, message: 'Price drop email sent' });
+  } catch (err) {
+    console.warn(`[PriceDrop] Email failed: ${err.message}`);
+    res.status(500).json({ ok: false, error: 'Failed to send email' });
+  }
+}
+
 module.exports = {
   handleDetect,
   handleCompare,
   handleComparePost,
   handleListDetections,
   handleWatch,
+  handlePriceDrop,
 };

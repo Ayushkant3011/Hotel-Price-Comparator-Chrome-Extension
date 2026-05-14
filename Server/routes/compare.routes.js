@@ -21,4 +21,7 @@ router.get('/detections', controller.handleListDetections);
 // Receive a watch request (hotel + email) from the extension
 router.post('/watch', controller.handleWatch);
 
+// Send a price drop alert email
+router.post('/price-drop', controller.handlePriceDrop);
+
 module.exports = router;
