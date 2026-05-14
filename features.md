@@ -19,15 +19,15 @@
 * **Description:** Side popup overlay showing competitor prices, badges for best price, quick links.
 * **Implementation:** In-popup charts (price history) using Chart.js, built with React and TailwindCSS.
 
-### ⏳ 4. Real-time updates & notifications
-* **Status:** `[IN PROGRESS]`
-* **Description:** Background service worker to poll/watch prices and send Chrome notifications on drops.
-* **Implementation:** Watch/unwatch via `chrome.storage.local`, 6-hour polling alarm via `chrome.alarms`, Chrome notifications on price drops. Email prompt modal in the UI. Server `POST /api/watch` endpoint exists but Nodemailer email delivery is not yet wired up.
+### ✅ 4. Real-time updates & notifications
+* **Status:** `[DONE]`
+* **Description:** Background service worker to poll/watch prices, send Chrome notifications on drops, and dispatch emails.
+* **Implementation:** Watch/unwatch via `chrome.storage.local`, 6-hour polling alarm via `chrome.alarms`, Chrome notifications on price drops. Server endpoints `/api/watch` and `/api/price-drop` integrated with Nodemailer for automated email delivery.
 
 ### ⏳ 5. Data storage & sync
 * **Status:** `[IN PROGRESS]`
-* **Description:** Local IndexedDB for fast caching; optional backend (Express + MongoDB/Firebase) for cross-device sync and history.
-* **Implementation:** Watched hotels stored in `chrome.storage.local`. Full IndexedDB and cross-device sync not yet implemented.
+* **Description:** Persistent backend database (MongoDB) to store scraped prices across server restarts and cross-device sync.
+* **Implementation:** Currently using an in-memory `Map()` on the server. Migrating to MongoDB via Mongoose.
 
 ### ⏳ 6. Currency, localization & UX
 * **Status:** `[TODO]`

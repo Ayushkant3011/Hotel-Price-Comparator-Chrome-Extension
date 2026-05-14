@@ -52,11 +52,11 @@ The repository is split into three main parts:
 2. A glassmorphic modal prompts for their email address.
 3. The email + hotel details are sent to the background service worker via `WATCH_HOTEL`.
 4. The service worker saves the hotel to `chrome.storage.local` and creates a `pricePoll` alarm (6-hour interval).
-5. The service worker also forwards the request to `POST /api/watch` on the backend.
-6. Every 6 hours, `performPricePoll` iterates all watched hotels, fetches current prices via the backend, and sends a Chrome notification if a price drop is detected.
+5. The service worker also forwards the request to `POST /api/watch` on the backend, which sends an immediate watch confirmation email.
+6. Every 6 hours, `performPricePoll` iterates all watched hotels, fetches current prices via the backend, and if a price drop is detected:
+   - Fires a local Chrome Desktop notification.
+   - Triggers `POST /api/price-drop` on the backend to send a price drop email alert.
 7. After a drop notification, the stored price is updated to prevent duplicate alerts.
-
-> **Note**: Server-side email notifications (e.g., via Nodemailer) are not yet implemented. The `POST /api/watch` endpoint currently logs and acknowledges the request.
 
 ---
 
@@ -85,11 +85,10 @@ The service worker uses `chrome.alarms` to poll the backend every 6 hours for up
 - **Core detection & scraping**: Content scripts that detect listings (hotel name, location, price) on popular sites using multi-strategy fallbacks.
 - **Matching & search**: Backend search aggregator using Dice's coefficient to match and sort competitor prices accurately.
 - **Price comparison UI**: Side popup overlay showing competitor prices, badges for best price, quick links, and in-popup charts (Chart.js).
-- **Price watching (client-side)**: Users can watch/unwatch hotels with email input. Data persisted in `chrome.storage.local`. Background polling via `chrome.alarms` with Chrome notification on price drops.
+- **Price Watching & Notifications**: Client-side storage of watched hotels via `chrome.storage.local`. Background polling every 6 hours via `chrome.alarms`. Complete server-side email integration (Nodemailer) for watch confirmations and price drop alerts.
 
 ### ⏳ In Progress / Planned
-- **Email notifications**: Server-side email delivery via Nodemailer for watch confirmations and price drop alerts.
-- **Data storage & sync**: Local IndexedDB for caching and optional backend for cross-device sync.
+- **Data storage & sync**: Replacing in-memory server storage with MongoDB for persistent cross-device syncing of scraped price data.
 - **Currency, localization & UX**: Auto currency conversion, time zone handling, and i18n.
 - **Authentication & personalization**: Firebase / Google OAuth for saved favorites and alerts.
 - **Privacy & security**: Minimal Manifest V3 permissions and opt-in data sharing.
