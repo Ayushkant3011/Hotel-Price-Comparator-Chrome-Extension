@@ -7,6 +7,7 @@
 
 const { normalizeHotelName, normalizeLocation, parsePrice } = require('../utils/normalize');
 const { findMatches } = require('./matcher.service');
+const { normalizeToUSD } = require('./currency.service');
 const Detection = require('../models/Detection.model');
 
 /**
@@ -39,6 +40,9 @@ async function storeDetection(detection) {
     currency = currency || parsed.currency;
   }
 
+  // Normalize the price to USD for fair comparison
+  const normalizedPriceUSD = normalizeToUSD(price, currency);
+
   const updateData = {
     name: detection.title,
     normalizedName: key,
@@ -47,6 +51,7 @@ async function storeDetection(detection) {
     normalizedLocation: normalizeLocation(detection.location),
     price: price || null,
     currency: currency || null,
+    normalizedPriceUSD: normalizedPriceUSD,
     priceRaw: detection.priceRaw || null,
     url: detection.url || null,
     checkIn: detection.checkIn || null,
@@ -103,10 +108,16 @@ async function findCompetitorPrices(hotelName, location) {
     }
 
     const matches = Array.from(bySite.values()).sort((a, b) => {
-      // Sort by price ascending (cheapest first), nulls last
-      if (a.price === null) return 1;
-      if (b.price === null) return -1;
-      return a.price - b.price;
+      // Sort by normalizedPriceUSD ascending (cheapest first), nulls last
+      if (a.normalizedPriceUSD == null && b.normalizedPriceUSD == null) {
+        // Fallback to raw price if neither has normalized
+        if (a.price === null) return 1;
+        if (b.price === null) return -1;
+        return a.price - b.price;
+      }
+      if (a.normalizedPriceUSD == null) return 1;
+      if (b.normalizedPriceUSD == null) return -1;
+      return a.normalizedPriceUSD - b.normalizedPriceUSD;
     });
 
     return {

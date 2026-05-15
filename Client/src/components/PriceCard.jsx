@@ -35,6 +35,14 @@ export default function PriceCard({ competitor, isCheapest }) {
         <div className={`text-lg font-bold tracking-tight ${isCheapest ? 'text-emerald-400' : 'text-slate-200'}`}>
           {competitor.currency} {competitor.price?.toLocaleString()}
         </div>
+        
+        {/* Show normalized USD price if the original was in a different currency */}
+        {competitor.currency && competitor.currency !== 'USD' && competitor.normalizedPriceUSD && (
+          <div className="text-[10px] text-slate-500 font-medium -mt-1 mb-1">
+            ~ USD {competitor.normalizedPriceUSD.toLocaleString()}
+          </div>
+        )}
+
         <a 
           href={competitor.url || '#'} 
           target="_blank" 

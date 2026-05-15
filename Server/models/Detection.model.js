@@ -12,6 +12,7 @@ const detectionSchema = new mongoose.Schema({
   normalizedLocation: { type: String, default: null },
   price: { type: Number, default: null },
   currency: { type: String, default: null },
+  normalizedPriceUSD: { type: Number, default: null },
   priceRaw: { type: String, default: null },
   url: { type: String, default: null },
   checkIn: { type: String, default: null },
