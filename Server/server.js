@@ -5,12 +5,12 @@ const app = require('./app');
 const connectDB = require('./utils/db');
 
 const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`Server is up and running on port ${port}`);
-  console.log(`API base: http://localhost:${port}/api`);
-  console.log(`Health check: http://localhost:${port}/`);
-});
 // Connect to MongoDB, then start the server
 connectDB().then(() => {
-  console.log("Mongo db is running");
+  console.log("db is connected");
+  app.listen(port, () => {
+    console.log("server connected");
+    console.log(`API base: http://localhost:${port}/api`);
+    console.log(`Health check: http://localhost:${port}/`);
+  });
 });
