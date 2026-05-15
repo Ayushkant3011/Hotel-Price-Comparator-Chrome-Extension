@@ -24,10 +24,10 @@
 * **Description:** Background service worker to poll/watch prices, send Chrome notifications on drops, and dispatch emails.
 * **Implementation:** Watch/unwatch via `chrome.storage.local`, 6-hour polling alarm via `chrome.alarms`, Chrome notifications on price drops. Server endpoints `/api/watch` and `/api/price-drop` integrated with Nodemailer for automated email delivery.
 
-### ⏳ 5. Data storage & sync
-* **Status:** `[IN PROGRESS]`
+### ✅ 5. Data storage & sync
+* **Status:** `[DONE]`
 * **Description:** Persistent backend database (MongoDB) to store scraped prices across server restarts and cross-device sync.
-* **Implementation:** Currently using an in-memory `Map()` on the server. Migrating to MongoDB via Mongoose.
+* **Implementation:** Successfully migrated from an in-memory `Map()` to MongoDB via Mongoose. Data now persists across server restarts.
 
 ### ⏳ 6. Currency, localization & UX
 * **Status:** `[TODO]`
