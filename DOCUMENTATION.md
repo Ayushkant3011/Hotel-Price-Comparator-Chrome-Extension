@@ -40,8 +40,11 @@ The repository is split into three main parts:
   - `GET /api/compare` — Search competitor prices by hotel name and location.
   - `POST /api/compare` — Same as above, via JSON body.
   - `GET /api/detections` — List all stored detections (debug/admin).
-  - `POST /api/watch` — Register a watch request (hotel + email). Currently logs and acknowledges; email sending via Nodemailer is a TODO.
-- **Architecture**: Follows a standard MVC-like pattern (`/routes`, `/controllers`, `/services`, `/utils`, `/middleware`).
+  - `POST /api/watch` — Register a watch request (hotel + email) and send confirmation.
+  - `POST /api/price-drop` — Send a price drop email alert.
+- **Architecture**: Follows a standard MVC-like pattern (`/routes`, `/controllers`, `/services`, `/utils`, `/middleware`, `/models`).
+- **Database**: Uses **MongoDB (Mongoose)** for persistent storage. The `Detection` model includes a compound index (`normalizedName` + `site`) to ensure only the latest price is kept per site, and a TTL index to automatically purge data older than 24 hours.
+- **Currency Service**: Uses a static exchange rate map to normalize all incoming foreign currencies to a base USD value (`normalizedPriceUSD`) for fair comparison sorting.
 - **Matching Engine**: Employs Dice's coefficient (bigram similarity) to match hotels across platforms.
 
 ---
@@ -77,6 +80,13 @@ To solve this, the backend uses **Fuzzy Matching**, specifically **Dice's coeffi
 ### Background Polling & State Sync
 The service worker uses `chrome.alarms` to poll the backend every 6 hours for updated prices on watched hotels. Watch data is persisted in `chrome.storage.local` so it survives browser restarts. The popup auto-checks the watch status on open via `CHECK_WATCH_STATUS`.
 
+### Currency Normalization
+To ensure fair comparison, all scraped prices are converted to a base currency (USD) before comparison. 
+1. When a price is detected (e.g., `EUR 90`), the backend `currency.service.js` calculates its equivalent USD value (e.g., `~$97.20`) using static exchange rates.
+2. Both values are saved to MongoDB.
+3. Competitor search results are sorted by `normalizedPriceUSD`.
+4. The React UI displays the raw currency, and if it's not USD, it displays a subtitle showing the estimated USD equivalent so the user understands the sorting.
+
 ---
 
 ## Features
@@ -86,11 +96,11 @@ The service worker uses `chrome.alarms` to poll the backend every 6 hours for up
 - **Matching & search**: Backend search aggregator using Dice's coefficient to match and sort competitor prices accurately.
 - **Price comparison UI**: Side popup overlay showing competitor prices, badges for best price, quick links, and in-popup charts (Chart.js).
 - **Price Watching & Notifications**: Client-side storage of watched hotels via `chrome.storage.local`. Background polling every 6 hours via `chrome.alarms`. Complete server-side email integration (Nodemailer) for watch confirmations and price drop alerts.
+- **Data storage & sync**: Persistent backend database using **MongoDB** (via Mongoose) to store scraped prices across server restarts. Features TTL indexes for automatic data cleanup.
+- **Currency Normalization**: Auto currency conversion to USD for fair cross-platform price sorting and UI localization.
 
 ### ⏳ In Progress / Planned
-- **Data storage & sync**: Replacing in-memory server storage with MongoDB for persistent cross-device syncing of scraped price data.
-- **Currency, localization & UX**: Auto currency conversion, time zone handling, and i18n.
-- **Authentication & personalization**: Firebase / Google OAuth for saved favorites and alerts.
+- **Authentication & personalization**: Firebase / Google OAuth for saved favorites and cross-device watch list sync.
 - **Privacy & security**: Minimal Manifest V3 permissions and opt-in data sharing.
 - **Performance & reliability**: Rate-limiting, caching layers, and exponential backoff.
 - **ML / recommendations**: "Best time to book" models and personalized suggestions.

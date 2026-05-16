@@ -29,9 +29,10 @@
 * **Description:** Persistent backend database (MongoDB) to store scraped prices across server restarts and cross-device sync.
 * **Implementation:** Successfully migrated from an in-memory `Map()` to MongoDB via Mongoose. Data now persists across server restarts.
 
-### ⏳ 6. Currency, localization & UX
-* **Status:** `[TODO]`
-* **Description:** Auto currency conversion, time zone handling, multi-language support (i18n).
+### ✅ 6. Currency, localization & UX
+* **Status:** `[DONE]`
+* **Description:** Auto currency conversion to USD for fair comparison.
+* **Implementation:** `currency.service.js` uses static exchange rates to normalize incoming prices to USD. MongoDB stores `normalizedPriceUSD`. Search results sort by normalized price. UI displays estimated USD conversion if the original price was in a different currency.
 
 ### ⏳ 7. Authentication & personalization
 * **Status:** `[TODO]`
