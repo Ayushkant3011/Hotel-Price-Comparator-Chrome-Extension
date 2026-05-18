@@ -100,7 +100,7 @@ To ensure fair comparison, all scraped prices are converted to a base currency (
 - **Currency Normalization**: Auto currency conversion to USD for fair cross-platform price sorting and UI localization.
 
 ### ⏳ In Progress / Planned
-- **Authentication & personalization**: Firebase / Google OAuth for saved favorites and cross-device watch list sync.
+- **Authentication & personalization**: Integrating Firebase Auth (Google Sign-In) to make login required for the "Watch Price" feature, allowing users to sync their watched hotels across devices.
 - **Privacy & security**: Minimal Manifest V3 permissions and opt-in data sharing.
 - **Performance & reliability**: Rate-limiting, caching layers, and exponential backoff.
 - **ML / recommendations**: "Best time to book" models and personalized suggestions.

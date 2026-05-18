@@ -35,8 +35,9 @@
 * **Implementation:** `currency.service.js` uses static exchange rates to normalize incoming prices to USD. MongoDB stores `normalizedPriceUSD`. Search results sort by normalized price. UI displays estimated USD conversion if the original price was in a different currency.
 
 ### ⏳ 7. Authentication & personalization
-* **Status:** `[TODO]`
-* **Description:** Optional Firebase / Google OAuth for saved favorites, alerts, preferences.
+* **Status:** `[IN PROGRESS]`
+* **Description:** Firebase / Google Auth for saved favorites, cross-device watch list sync, and personalized settings.
+* **Implementation:** Setting up Firebase Auth on the extension (Google Sign-In) and `firebase-admin` on the Node backend to securely verify users and sync their `chrome.storage.local` data to MongoDB.
 
 ### ⏳ 8. Privacy & security
 * **Status:** `[IN PROGRESS]`
