@@ -2,7 +2,7 @@
 node_modules/
 package-lock.json
 yarn.lock
-
+chrome-extension-6d1bf-firebase-adminsdk-fbsvc-41f8465bd3.json
 # Environment variables
 .env
 .env.local

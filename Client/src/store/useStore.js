@@ -6,6 +6,12 @@ const useStore = create((set, get) => ({
   competitorPrices: [],
   matchCount: 0,
   isWatched: false,
+  
+  // Auth state
+  user: null,
+  token: null,
+  setUser: (user) => set({ user }),
+  setToken: (token) => set({ token }),
 
   fetchData: () => {
     set({ status: 'requesting' });
@@ -89,17 +95,43 @@ const useStore = create((set, get) => ({
   },
 
   toggleWatch: (email) => {
-    const { currentDetection, isWatched } = get();
+    const { currentDetection, isWatched, user, token } = get();
     if (!currentDetection) return;
+
+    // Use logged in user email if available, fallback to manual input
+    const watchEmail = user ? user.email : email;
 
     const type = isWatched ? 'UNWATCH_HOTEL' : 'WATCH_HOTEL';
     const payload = isWatched 
       ? { title: currentDetection.title, location: currentDetection.location }
-      : { ...currentDetection, email }; // Include email in the payload
+      : { ...currentDetection, email: watchEmail }; // Include email in the payload
 
     chrome.runtime.sendMessage({ type, payload }, (resp) => {
       if (resp && resp.ok) {
         set({ isWatched: !isWatched });
+
+        // If authenticated, sync the updated list to the cloud backend
+        if (token && typeof chrome !== 'undefined') {
+          // Wait briefly for background to update storage
+          setTimeout(() => {
+            chrome.storage.local.get(['watchedHotels'], async (storage) => {
+              try {
+                const list = storage.watchedHotels || [];
+                await fetch('http://localhost:3000/api/user/watchlist', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                  },
+                  body: JSON.stringify({ watchedHotels: list })
+                });
+                console.log("Watchlist synced to cloud!");
+              } catch (err) {
+                console.error("Failed to sync watchlist to cloud", err);
+              }
+            });
+          }, 500);
+        }
       }
     });
   }
