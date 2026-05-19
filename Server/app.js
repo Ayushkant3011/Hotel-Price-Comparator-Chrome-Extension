@@ -9,6 +9,7 @@ const express = require('express');
 const corsMiddleware = require('./middleware/cors');
 const errorHandler = require('./middleware/errorHandler');
 const compareRoutes = require('./routes/compare.routes');
+const userRoutes = require('./routes/user.routes');
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.get('/', (req, res) => {
 
 /* ── API routes ── */
 app.use('/api', compareRoutes);
+app.use('/api/user', userRoutes);
 
 /* ── Error handler (must be last) ── */
 app.use(errorHandler);
