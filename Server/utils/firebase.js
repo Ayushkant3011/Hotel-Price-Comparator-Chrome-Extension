@@ -7,9 +7,14 @@ const admin = require('firebase-admin');
 // or load from environment variables in production.
 let serviceAccount;
 try {
-  serviceAccount = require('../firebase-service-account.json');
+  const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+  if (serviceAccountPath) {
+    serviceAccount = require(serviceAccountPath);
+  } else {
+    console.warn('[Firebase] FIREBASE_SERVICE_ACCOUNT_PATH not found in .env');
+  }
 } catch (error) {
-  console.warn('[Firebase] Service account JSON not found. Auth will fail.');
+  console.warn(`[Firebase] Service account JSON not found at path: ${process.env.FIREBASE_SERVICE_ACCOUNT_PATH}. Auth will fail.`);
 }
 
 if (serviceAccount && !admin.apps.length) {
